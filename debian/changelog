@@ -2,6 +2,7 @@ python-nbxmpp (0.5.3-0.1) unstable; urgency=medium
 
   * New upstream release.
   * This is a new maintainer upload.
+  * Remove fix-raise-statements.patch (applied upstream).
 
  -- Mathias Ertl <mati@jabber.at>  Sat, 05 Dec 2015 12:30:38 +0100
 
