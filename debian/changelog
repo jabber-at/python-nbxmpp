@@ -1,3 +1,10 @@
+python-nbxmpp (0.5.3-0.1) unstable; urgency=medium
+
+  * New upstream release.
+  * This is a new maintainer upload.
+
+ -- Mathias Ertl <mati@jabber.at>  Sat, 05 Dec 2015 12:30:38 +0100
+
 python-nbxmpp (0.5.1-2) unstable; urgency=medium
 
   * Build for python2 and python3 (thanks to W. Martin Borgert for notifying
