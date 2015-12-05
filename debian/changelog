@@ -1,0 +1,23 @@
+python-nbxmpp (0.5.1-2) unstable; urgency=medium
+
+  * Build for python2 and python3 (thanks to W. Martin Borgert for notifying
+    me that python3 was supported).
+  * debian/control:
+     - update the Vcs-* URLs (add .git suffix).
+     - build-depend on python3-all.
+     - split in three binary packages (python2, python3 and doc).
+     - recomment python-openssl (and python3-openssl).
+  * debian/python-nbxmpp.doc-base, debian/python-nbxmpp.docs: rename to
+    python-nbxmpp-doc.doc-base, python-nbxmpp-doc.docs to install
+    documentation to the documentation package.
+  * debian/rules: use pybuild to build for python2 and python3.
+  * debian/patches/fix-raise-statements.patch: fix old syntax of raise
+    statement which was incompatible with python 3.4.
+
+ -- Tanguy Ortolo <tanguy+debian@ortolo.eu>  Wed, 15 Oct 2014 23:27:47 +0200
+
+python-nbxmpp (0.5.1-1) unstable; urgency=low
+
+  * Initial release. (Closes: #672847)
+
+ -- Tanguy Ortolo <tanguy+debian@ortolo.eu>  Wed, 15 Oct 2014 09:37:00 +0200

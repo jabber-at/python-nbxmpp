@@ -1,0 +1,42 @@
+Source: python-nbxmpp
+Section: python
+Priority: optional
+Maintainer: Tanguy Ortolo <tanguy+debian@ortolo.eu>
+Build-Depends: debhelper (>= 9), dh-python, python-all, python3-all
+Standards-Version: 3.9.6
+Homepage: https://python-nbxmpp.gajim.org/
+Vcs-Git: git://git.ortolo.eu/pkg-python-nbxmpp.git
+Vcs-Browser: http://git.ortolo.eu/pkg-python-nbxmpp.git
+
+Package: python-nbxmpp
+Architecture: all
+Depends: ${misc:Depends}, ${python:Depends}
+Recommends: python-openssl
+Description: Non blocking Jabber/XMPP Python library
+ python-nbxmpp is a Python library that provides a way for Python applications
+ to use Jabber/XMPP networks in a non-blocking way. This library is initialy a
+ fork of xmpppy one, but using non-blocking sockets.
+ .
+ This is the Python 2 version of this library.
+
+Package: python3-nbxmpp
+Architecture: all
+Depends: ${misc:Depends}, ${python3:Depends}, python3-gi
+Recommends: python3-openssl
+Description: Non blocking Jabber/XMPP Python 3 library
+ python-nbxmpp is a Python library that provides a way for Python applications
+ to use Jabber/XMPP networks in a non-blocking way. This library is initialy a
+ fork of xmpppy one, but using non-blocking sockets.
+ .
+ This is the Python 3 version of this library.
+
+Package: python-nbxmpp-doc
+Architecture: all
+Section: doc
+Depends: ${misc:Depends}
+Description: Non blocking Jabber/XMPP Python library, documentation
+ python-nbxmpp is a Python library that provides a way for Python applications
+ to use Jabber/XMPP networks in a non-blocking way. This library is initialy a
+ fork of xmpppy one, but using non-blocking sockets.
+ .
+ This is the documentation of this library.

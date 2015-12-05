@@ -1,0 +1,8 @@
+Document: python-nbxmpp
+Title: python-nbxmpp API documentation
+Abstract: This manual documents the python-nbxmpp API
+Section: Programming/Python
+
+Format: HTML
+Index: /usr/share/doc/python-nbxmpp-doc/apidocs/index.html
+Files: /usr/share/doc/python-nbxmpp-doc/apidocs/*.html
