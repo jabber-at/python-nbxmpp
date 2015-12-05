@@ -1,12 +1,13 @@
 Source: python-nbxmpp
 Section: python
 Priority: optional
-Maintainer: Tanguy Ortolo <tanguy+debian@ortolo.eu>
+Maintainer: Mathias Ertl <mati@jabber.at>
+XSBC-Orig-Maintainer: Tanguy Ortolo <tanguy+debian@ortolo.eu>
 Build-Depends: debhelper (>= 9), dh-python, python-all, python3-all, python3-gi
 Standards-Version: 3.9.6
 Homepage: https://python-nbxmpp.gajim.org/
-Vcs-Git: git://git.ortolo.eu/pkg-python-nbxmpp.git
-Vcs-Browser: http://git.ortolo.eu/pkg-python-nbxmpp.git
+Vcs-Git: https://github.com/jabber-at/python-nbxmpp.git
+Vcs-Browser: https://github.com/jabber-at/python-nbxmpp
 
 Package: python-nbxmpp
 Architecture: all
