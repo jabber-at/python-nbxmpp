@@ -56,7 +56,7 @@ def gattr(obj, attr, default=None):
         return default
 
 
-class SSLWrapper:
+class SSLWrapper(object):
     """
     Abstract SSLWrapper base class
     """
@@ -120,7 +120,8 @@ class SSLWrapper:
                 if self.exc_str:
                     if self.strerror:
                         s += "(%s)" % self.exc_str
-                    else: s += "(%s)" % str(self.exc_args)
+                    else:
+                        s += "(%s)" % str(self.exc_args)
             return s
 
     def __init__(self, sslobj, sock=None):
@@ -157,7 +158,7 @@ class PyOpenSSLWrapper(SSLWrapper):
         self.parent.__init__(self, *args)
 
     def is_numtoolarge(self, e):
-        ''' Magic methods don't need documentation '''
+        """ Magic methods don't need documentation """
         t = ('asn1 encoding routines', 'a2d_ASN1_OBJECT', 'first num too large')
         return (isinstance(e.args, (list, tuple)) and len(e.args) == 1 and
                 isinstance(e.args[0], (list, tuple)) and len(e.args[0]) == 2 and
@@ -267,9 +268,9 @@ class NonBlockingTLS(PlugIn):
         self.cacerts = cacerts
         self.mycerts = mycerts
         if cipher_list is None:
-            self.cipher_list = 'HIGH:!aNULL:RC4-SHA'
+            self.cipher_list = b'HIGH:!aNULL:RC4-SHA'
         else:
-            self.cipher_list = cipher_list
+            self.cipher_list = cipher_list.encode('ascii')
         if tls_version is None:
             self.tls_version = '1.0'
         else:
@@ -350,7 +351,7 @@ class NonBlockingTLS(PlugIn):
                 cert = ''.join(lines[begin:i+2])
                 try:
                     x509cert = OpenSSL.crypto.load_certificate(
-                            OpenSSL.crypto.FILETYPE_PEM, cert)
+                            OpenSSL.crypto.FILETYPE_PEM, cert.encode('ascii', 'ignore'))
                     cert_store.add_cert(x509cert)
                 except OpenSSL.crypto.Error as exception_obj:
                     if logg:

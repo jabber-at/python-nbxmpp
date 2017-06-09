@@ -27,7 +27,8 @@ from base64 import b64encode
 import logging
 log = logging.getLogger('nbxmpp.proxy_connectors')
 
-class ProxyConnector:
+
+class ProxyConnector(object):
     """
     Interface for proxy-connecting object - when tunnneling XMPP over proxies,
     some connecting process usually has to be done before opening stream. Proxy
@@ -195,7 +196,8 @@ class SOCKS5Connector(ProxyConnector):
 #                               # Resolve locally
 #                               self.ipaddr = socket.inet_aton(socket.gethostbyname(self.xmpp_server[0]))
 #                               req = req + "\x01" + ipaddr
-        req = req + struct.pack(">H", self.xmpp_server[1])
+
+        req += struct.pack(">H", self.xmpp_server[1])
         self.onreceive(self._on_req_sent)
         self.send(req)
 

@@ -42,7 +42,7 @@ if os.name == 'nt':
 elif os.name == 'posix':
     import fcntl
 
-if sys.version_info[0] == 2:
+if sys.version_info[0] == 2 or not HAVE_GLIB:
     FLAG_WRITE                      = 20 # write only
     FLAG_READ                       = 19 # read only
     FLAG_READ_WRITE = 23 # read and write
@@ -76,7 +76,7 @@ def get_idlequeue():
             return SelectIdleQueue()
 
 
-class IdleObject:
+class IdleObject(object):
     """
     Idle listener interface. Listed methods are called by IdleQueue.
     """
@@ -216,7 +216,7 @@ class IdleCommand(IdleObject):
         self._return_result()
 
 
-class IdleQueue:
+class IdleQueue(object):
     """
     IdleQueue provide three distinct time based features. Uses select.poll()
 
@@ -269,7 +269,7 @@ class IdleQueue:
         Remove alarm callback alarm_cb scheduled on alarm_time. Returns True if
         it was removed sucessfully, otherwise False
         """
-        if not alarm_time in self.alarms:
+        if alarm_time not in self.alarms:
             return False
         i = -1
         for i in range(len(self.alarms[alarm_time])):
@@ -278,7 +278,7 @@ class IdleQueue:
                 break
         if i != -1:
             del self.alarms[alarm_time][i]
-            if self.alarms[alarm_time] == []:
+            if not self.alarms[alarm_time]:
                 del self.alarms[alarm_time]
             return True
         else:
@@ -568,7 +568,7 @@ class GlibIdleQueue(IdleQueue):
     def process(self):
         self._check_time_events()
 
-    if sys.version_info[0] == 2:
+    if sys.version_info[0] == 2 or not HAVE_GLIB:
         def current_time(self):
             return gobject.get_current_time() * 1e6
     else:

@@ -29,7 +29,7 @@ import logging
 log = logging.getLogger('nbxmpp.client_nb')
 
 
-class NonBlockingClient:
+class NonBlockingClient(object):
     """
     Client class is XMPP connection mountpoint. Objects for authentication,
     network communication, roster, xml parsing ... are plugged to client object.
@@ -160,6 +160,7 @@ class NonBlockingClient:
         :param port: port number of XMPP server
         :param on_proxy_failure: called if error occurs during TCP connection
             to proxy server or during proxy connecting process
+        :param on_stream_error_cb: called if error occurs
         :param proxy: dictionary with proxy data. It should contain at least
             values for keys 'host' and 'port' - connection details for proxy
             serve and optionally keys 'user' and 'pass' as proxy credentials
@@ -273,9 +274,9 @@ class NonBlockingClient:
         """
         if err_message:
             log.debug('While looping over DNS A records: %s' % err_message)
-        if self.ip_addresses == []:
+        if not self.ip_addresses:
             msg = 'Run out of hosts for name %s:%s.' % (self.Server, self.Port)
-            msg = msg + ' Error for last IP: %s' % err_message
+            msg += ' Error for last IP: %s' % err_message
             self.disconnect(msg)
         else:
             self.current_ip = self.ip_addresses.pop(0)
@@ -498,10 +499,10 @@ class NonBlockingClient:
                 if self.protocol_type != 'BOSH':
                     self._channel_binding = self.Connection.NonBlockingTLS.get_channel_binding()
                     # TLS handshake is finished so channel binding data muss exist
-                    assert (self._channel_binding != None)
+                    assert (self._channel_binding is not None)
             except NotImplementedError:
                 pass
-        if auth_mechs == None:
+        if auth_mechs is None:
             self._auth_mechs = SASL_AUTHENTICATION_MECHANISMS | set(['XEP-0078'])
         else:
             self._auth_mechs = auth_mechs
@@ -556,7 +557,7 @@ class NonBlockingClient:
         """
         if data:
             self.Dispatcher.ProcessNonBlocking(data)
-        if not 'SASL' in self.__dict__:
+        if 'SASL' not in self.__dict__:
             # SASL is pluged out, possible disconnect
             return
         if self.SASL.startsasl == 'in-process':

@@ -101,7 +101,7 @@ class NonBlockingBOSH(NonBlockingTransport):
         NonBlockingTransport.connect(self, conn_5tuple, on_connect, on_connect_failure)
 
         global FAKE_DESCRIPTOR
-        FAKE_DESCRIPTOR = FAKE_DESCRIPTOR - 1
+        FAKE_DESCRIPTOR -= 1
         self.fd = FAKE_DESCRIPTOR
 
         self.stanza_buffer = []
@@ -493,8 +493,7 @@ def get_rand_number():
     return rndg.getrandbits(50)
 
 
-
-class AckChecker():
+class AckChecker(object):
     """
     Class for generating rids and generating and checking acknowledgements in
     BOSH messages
@@ -537,10 +536,7 @@ class AckChecker():
         return self.rid
 
 
-
-
-
-class KeyStack():
+class KeyStack(object):
     """
     Class implementing key sequences for BOSH messages
     """

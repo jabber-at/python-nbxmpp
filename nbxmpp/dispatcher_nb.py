@@ -23,11 +23,14 @@ different handlers to different XMPP stanzas and namespaces
 from __future__ import unicode_literals
 from . import simplexml
 import sys
+import time
 import locale
 import re
+import uuid
+import copy
 from xml.parsers.expat import ExpatError
 from .plugin import PlugIn
-from .protocol import (NS_STREAMS, NS_XMPP_STREAMS, NS_HTTP_BIND, Iq, Presence,
+from .protocol import (NS_DELAY2, NS_STREAMS, NS_XMPP_STREAMS, NS_HTTP_BIND, Iq, Presence,
         Message, Protocol, Node, Error, ERR_FEATURE_NOT_IMPLEMENTED, StreamError)
 import logging
 
@@ -38,12 +41,11 @@ log = logging.getLogger('nbxmpp.dispatcher_nb')
 
 #: default timeout to wait for response for our id
 DEFAULT_TIMEOUT_SECONDS = 25
-outgoingID = 0
 
 XML_DECLARATION = '<?xml version=\'1.0\'?>'
 
 # FIXME: ugly
-class Dispatcher():
+class Dispatcher(object):
     """
     Why is this here - I needed to redefine Dispatcher for BOSH and easiest way
     was to inherit original Dispatcher (now renamed to XMPPDispatcher). Trouble
@@ -104,7 +106,7 @@ class XMPPDispatcher(PlugIn):
         # \ufddo -> \ufdef range
         c = '\ufdd0'
         r = c
-        while (c < '\ufdef'):
+        while c < '\ufdef':
             c = chr(ord(c) + 1)
             r += '|' + c
 
@@ -112,7 +114,7 @@ class XMPPDispatcher(PlugIn):
         c = '\ufffe'
         r += '|' + c
         r += '|' + chr(ord(c) + 1)
-        while (c < '\U0010fffe'):
+        while c < '\U0010fffe':
             c = chr(ord(c) + 0x10000)
             r += '|' + c
             r += '|' + chr(ord(c) + 1)
@@ -120,9 +122,7 @@ class XMPPDispatcher(PlugIn):
         self.invalid_chars_re = re.compile(r)
 
     def getAnID(self):
-        global outgoingID
-        outgoingID += 1
-        return repr(outgoingID)
+        return str(uuid.uuid4())
 
     def dumpHandlers(self):
         """
@@ -300,6 +300,7 @@ class XMPPDispatcher(PlugIn):
         :param typ: value of stanza's "type" attribute. If not specified any
                 value will match
         :param ns: namespace of child that stanza must contain.
+        :param xmlns: xml namespace
         :param makefirst: insert handler in the beginning of handlers list instead
                 of      adding it to the end. Note that more common handlers i.e. w/o "typ"
                 and " will be called first nevertheless.
@@ -388,7 +389,7 @@ class XMPPDispatcher(PlugIn):
 
     def UnregisterCycleHandler(self, handler):
         """
-        Unregister handler that will is called on every Dispatcher.Process() call
+        Unregister handler that will be called on every Dispatcher.Process() call
         """
         if handler in self._cycleHandlers:
             self._cycleHandlers.remove(handler)
@@ -460,7 +461,7 @@ class XMPPDispatcher(PlugIn):
         stanza.getName() != 'a' and stanza.getName() != 'enabled' and
         stanza.getName() != 'resumed'):
             # increments the number of stanzas that has been handled
-            self.sm.in_h = self.sm.in_h + 1
+            self.sm.in_h += 1
         list_ = ['default'] # we will use all handlers:
         if typ in self.handlers[xmlns][name]:
             list_.append(typ) # from very common...
@@ -570,14 +571,25 @@ class XMPPDispatcher(PlugIn):
                 if self._owner._registered_name and not stanza.getAttr('from'):
                     stanza.setAttr('from', self._owner._registered_name)
 
+        self._owner.Connection.send(stanza, now)
+
         # If no ID then it is a whitespace
         if self.sm and self.sm.enabled and ID:
+            # add timestamp to message stanza in queue
+            if (stanza.getName() == 'message' and
+                    stanza.getType() in ('chat', 'groupchat')):
+                timestamp = time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime())
+                attrs = {'stamp': timestamp}
+                if stanza.getType() != 'groupchat':
+                    # Dont leak our JID to Groupchats
+                    attrs['from'] = stanza.getAttr('from')
+                stanza.addChild('delay', namespace=NS_DELAY2, attrs=attrs)
             self.sm.uqueue.append(stanza)
-            self.sm.out_h = self.sm.out_h + 1
+            self.sm.out_h += 1
+
             if len(self.sm.uqueue) > self.sm.max_queue:
                 self.sm.request_ack()
 
-        self._owner.Connection.send(stanza, now)
         return ID
 
 

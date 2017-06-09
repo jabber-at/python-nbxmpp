@@ -110,7 +110,7 @@ class SASL(PlugIn):
         :param username: XMPP username
         :param password: XMPP password
         :param on_sasl: Callback, will be called after each SASL auth-step.
-        :param channel_binding: TLS channel binding data, None if the 
+        :param channel_binding: TLS channel binding data, None if the
                binding data is not available
         :param auth_mechs: Set of valid authentication mechanisms.
                Possible entries are:
@@ -184,16 +184,16 @@ class SASL(PlugIn):
             return
 
         self.mecs = set(
-            mec.getData() 
-            for mec 
+            mec.getData()
+            for mec
             in feats.getTag('mechanisms', namespace=NS_SASL).getTags('mechanism')
         ) & self.enabled_auth_mechs
-       
+
         # Password based authentication mechanism ordered by strength.
         # If the server supports a mechanism disable all weaker mechanisms.
         password_auth_mechs_strength = ['SCRAM-SHA-1-PLUS', 'SCRAM-SHA-1',
             'DIGEST-MD5', 'PLAIN', 'X-MESSENGER-OAUTH2']
-        if self.channel_binding == None:
+        if self.channel_binding is None:
             password_auth_mechs_strength.remove('SCRAM-SHA-1-PLUS')
         for i in range(0, len(password_auth_mechs_strength)):
             if password_auth_mechs_strength[i] in self.mecs:
@@ -243,7 +243,7 @@ class SASL(PlugIn):
                 raise NodeProcessed
             except kerberos.GSSError as e:
                 log.info('GSSAPI authentication failed: %s' % str(e))
-        if 'SCRAM-SHA-1-PLUS' in self.mecs and self.channel_binding != None:
+        if 'SCRAM-SHA-1-PLUS' in self.mecs and self.channel_binding is not None:
             self.mecs.remove('SCRAM-SHA-1-PLUS')
             self.mechanism = 'SCRAM-SHA-1-PLUS'
             self._owner._caller.get_password(self.set_password, self.mechanism)
@@ -422,8 +422,8 @@ class SASL(PlugIn):
                     r = 'c=' + scram_base64(self.scram_gs2)
                 else:
                     # Channel binding data goes in here too.
-                    r = 'c=' + scram_base64(bytes(self.scram_gs2)
-                                             + self.channel_binding)                   
+                    r = 'c=' + scram_base64(self.scram_gs2.encode('utf-8')
+                        + self.channel_binding)
                 r += ',r=' + data['r']
                 self.scram_soup += r
                 self.scram_soup = self.scram_soup.encode('utf-8')
@@ -461,18 +461,18 @@ class SASL(PlugIn):
             self.realm = chal['realm']
         if 'qop' in chal and ((chal['qop'] =='auth') or \
         (isinstance(chal['qop'], list) and 'auth' in chal['qop'])):
-            self.resp = {}
-            self.resp['username'] = self.username
+            self.resp = {'username': self.username,
+                'nonce': chal['nonce'],
+                'cnonce': '%x' % rndg.getrandbits(196),
+                'nc': ('00000001'),  # ToDo: Is this a tupel or only a string?
+                'qop': 'auth',
+                'digest-uri': 'xmpp/' + self._owner.Server,
+                'charset': 'utf-8'
+            }
             if self.realm:
                 self.resp['realm'] = self.realm
             else:
                 self.resp['realm'] = self._owner.Server
-            self.resp['nonce'] = chal['nonce']
-            self.resp['cnonce'] = '%x' % rndg.getrandbits(196)
-            self.resp['nc'] = ('00000001')
-            self.resp['qop'] = 'auth'
-            self.resp['digest-uri'] = 'xmpp/' + self._owner.Server
-            self.resp['charset'] = 'utf-8'
             # Password is now required
             self._owner._caller.get_password(self.set_password, self.mechanism)
         elif 'rspauth' in chal:
@@ -501,7 +501,7 @@ class SASL(PlugIn):
             self.client_nonce = '%x' % rndg.getrandbits(196)
             self.scram_soup = 'n=' + self.username + ',r=' + self.client_nonce
             if self.mechanism == 'SCRAM-SHA-1':
-                if self.channel_binding == None:
+                if self.channel_binding is None:
                     # Client doesn't support Channel Binding
                     self.scram_gs2 = 'n,,' # No CB yet.
                 else:
@@ -663,7 +663,7 @@ class NonBlockingBind(PlugIn):
         self.resuming = False
 
     def plugin(self, owner):
-        ''' Start resource binding, if allowed at this time. Used internally. '''
+        """ Start resource binding, if allowed at this time. Used internally. """
         if self._owner.Dispatcher.Stream.features:
             try:
                 self.FeaturesHandler(self._owner.Dispatcher,
@@ -731,12 +731,13 @@ class NonBlockingBind(PlugIn):
                 self.bound.append(resp.getTag('bind').getTagData('jid'))
                 log.info('Successfully bound %s.' % self.bound[-1])
                 jid = JID(resp.getTag('bind').getTagData('jid'))
+                self._owner._registered_name = jid
                 self._owner.User = jid.getNode()
                 self._owner.Resource = jid.getResource()
                 # Only negociate stream management after bounded
-                sm = self._owner._caller.sm
                 if self.supports_sm:
                     # starts negociation
+                    sm = self._owner._caller.sm
                     sm.supports_sm = True
                     sm.set_owner(self._owner)
                     sm.negociate()
@@ -745,6 +746,7 @@ class NonBlockingBind(PlugIn):
                 if hasattr(self, 'session') and self.session == -1:
                     # Server don't want us to initialize a session
                     log.info('No session required.')
+                    self._owner._caller.sm.resend_queue()   #resend old messages still in the smacks queue
                     self.on_bound('ok')
                 else:
                     self._owner.SendAndWaitForResponse(Protocol('iq', typ='set',
@@ -763,6 +765,7 @@ class NonBlockingBind(PlugIn):
         if isResultNode(resp):
             log.info('Successfully opened session.')
             self.session = 1
+            self._owner._caller.sm.resend_queue()   #resend old messages still in the smacks queue
             self.on_bound('ok')
         else:
             log.error('Session open failed.')
