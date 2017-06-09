@@ -304,6 +304,8 @@ class NonBlockingTransport(PlugIn):
     # FIXME: where and why does this need to be called
     def start_disconnect(self):
         self.set_state(DISCONNECTING)
+        if self._owner._caller.sm and self._owner._caller.sm.enabled:
+            self._owner._caller.sm.send_closing_ack()
 
 
 class NonBlockingTCP(NonBlockingTransport, IdleObject):
@@ -355,7 +357,7 @@ class NonBlockingTCP(NonBlockingTransport, IdleObject):
             self._sock = socket.socket(*conn_5tuple[:3])
         except socket.error as e:
             self._on_connect_failure('NonBlockingTCP Connect: Error while creating\
-                    socket: %s' % atr(e))
+                    socket: %s' % str(e))
             return
 
         self._send = self._sock.send
@@ -583,7 +585,7 @@ class NonBlockingTCP(NonBlockingTransport, IdleObject):
                 except UnicodeDecodeError:
                     for i in range(-1, -4, -1):
                         char = sent_data[i]
-                        if char & 0xc0 == 0xc0:
+                        if ord(char) & 0xc0 == 0xc0:
                             self.sent_bytes_buff = sent_data[i:]
                             sent_data = sent_data[:i]
                             break
@@ -752,11 +754,11 @@ class NonBlockingHTTP(NonBlockingTCP):
         if 'Connection' in headers and headers['Connection'].strip()=='close':
             self.close_current_connection = True
 
-        if self.expected_length > len(httpbody):
+        if self.expected_length > len(httpbody.encode('utf-8')):
             # If we haven't received the whole HTTP mess yet, let's end the thread.
             # It will be finnished from one of following recvs on plugged socket.
             log.info('not enough bytes in HTTP response - %d expected, got %d' %
-                    (self.expected_length, len(httpbody)))
+                    (self.expected_length, len(httpbody.encode('utf-8'))))
         else:
             # First part of buffer has been extraced and is going to be handled,
             # remove it from buffer
@@ -794,7 +796,7 @@ class NonBlockingHTTP(NonBlockingTCP):
             headers.append('Connection: Keep-Alive')
         headers.append('\r\n')
         headers = '\r\n'.join(headers)
-        return('%s%s' % (headers, httpbody))
+        return '%s%s' % (headers, httpbody)
 
     def parse_http_message(self, message):
         """
@@ -821,7 +823,7 @@ class NonBlockingHTTP(NonBlockingTCP):
             for dummy in header:
                 row = dummy.split(' ', 1)
                 headers[row[0][:-1]] = row[1]
-            body_size = headers['Content-Length']
+            body_size = int(headers['Content-Length'])
             rest_splitted = splitted[2:]
             while (len(httpbody) < body_size) and rest_splitted:
                 # Complete httpbody until it has the announced size

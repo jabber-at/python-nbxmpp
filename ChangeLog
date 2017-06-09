@@ -1,3 +1,20 @@
+python-nbxmpp 0.5.6 (03 June 2017)
+
+  * Support XEP-0198 Version 1.5.2
+  * Add new XEP Namespaces
+
+python-nbxmpp 0.5.5 (30 January 2017)
+
+  * Some cleanup
+  * Add some namespaces
+
+python-nbxmpp 0.5.4 (04 September 2016)
+
+  * Fix SCRAM authentication
+  * Fix BOSH connection with UTF-8 messages
+  * Fix smacks implementation
+  * Use uuid in stanza ids
+
 python-nbxmpp 0.5.3 (13 July 2015)
 
   * Fix receiving long utf8 strings under py3
