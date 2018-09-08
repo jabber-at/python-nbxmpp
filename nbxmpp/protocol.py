@@ -24,6 +24,7 @@ from .simplexml import Node, NodeBuilder
 import time
 import string
 import hashlib
+from base64 import b64encode
 
 def ascii_upper(s):
     return s.upper()
@@ -42,6 +43,8 @@ NS_ATOM           = 'http://www.w3.org/2005/Atom'
 NS_ATTENTION      = 'urn:xmpp:attention:0'                            # XEP-0224
 NS_AUTH           = 'jabber:iq:auth'
 NS_AVATAR         = 'http://www.xmpp.org/extensions/xep-0084.html#ns-metadata'
+NS_AVATAR_METADATA = 'urn:xmpp:avatar:metadata'						  # XEP-0084
+NS_AVATAR_DATA	  = 'urn:xmpp:avatar:data'						  	  # XEP-0084
 NS_BIND           = 'urn:ietf:params:xml:ns:xmpp-bind'
 NS_BLOCKING       = 'urn:xmpp:blocking'                               # XEP-0191
 NS_BOB            = 'urn:xmpp:bob'                                    # XEP-0231
@@ -87,7 +90,9 @@ NS_MSG_HINTS      = 'urn:xmpp:hints'                                  # XEP-0280
 NS_HTTP_AUTH      = 'http://jabber.org/protocol/http-auth'            # XEP-0070
 NS_HTTP_BIND      = 'http://jabber.org/protocol/httpbind'             # XEP-0124
 NS_HTTPUPLOAD     = 'urn:xmpp:http:upload'                            # XEP-0363
+NS_HTTPUPLOAD_0   = 'urn:xmpp:http:upload:0'						  # XEP-0363
 NS_IBB            = 'http://jabber.org/protocol/ibb'
+NS_IDLE           = 'urn:xmpp:idle:1'                                 # XEP-0319
 NS_INVISIBLE      = 'presence-invisible'                              # Jabberd2
 NS_IQ             = 'iq'                                              # Jabberd2
 NS_JINGLE         ='urn:xmpp:jingle:1'                                # XEP-0166
@@ -95,7 +100,8 @@ NS_JINGLE_ERRORS  = 'urn:xmpp:jingle:errors:1'                        # XEP-0166
 NS_JINGLE_RTP     = 'urn:xmpp:jingle:apps:rtp:1'                      # XEP-0167
 NS_JINGLE_RTP_AUDIO = 'urn:xmpp:jingle:apps:rtp:audio'                # XEP-0167
 NS_JINGLE_RTP_VIDEO = 'urn:xmpp:jingle:apps:rtp:video'                # XEP-0167
-NS_JINGLE_FILE_TRANSFER ='urn:xmpp:jingle:apps:file-transfer:3'        # XEP-0234
+NS_JINGLE_FILE_TRANSFER = 'urn:xmpp:jingle:apps:file-transfer:3'      # XEP-0234
+NS_JINGLE_FILE_TRANSFER_5 = 'urn:xmpp:jingle:apps:file-transfer:5'    # XEP-0234
 NS_JINGLE_XTLS='urn:xmpp:jingle:security:xtls:0'                      # XTLS: EXPERIMENTAL security layer of jingle
 NS_JINGLE_RAW_UDP = 'urn:xmpp:jingle:transports:raw-udp:1'            # XEP-0177
 NS_JINGLE_ICE_UDP = 'urn:xmpp:jingle:transports:ice-udp:1'            # XEP-0176
@@ -142,6 +148,7 @@ NS_SERVER         = 'jabber:server'
 NS_SESSION        = 'urn:ietf:params:xml:ns:xmpp-session'
 NS_SI             = 'http://jabber.org/protocol/si'                   # XEP-0096
 NS_SI_PUB         = 'http://jabber.org/protocol/sipub'                # XEP-0137
+NS_SID            = 'urn:xmpp:sid:0'                                  # XEP-0359
 NS_SIGNED         = 'jabber:x:signed'                                 # XEP-0027
 NS_SIMS           = 'urn:xmpp:sims:1'                                 # XEP-0385
 NS_SSN            = 'urn:xmpp:ssn'                                    # XEP-0155
@@ -173,10 +180,16 @@ NS_PUBKEY_REVOKE  = 'urn:xmpp:revoke:2'
 NS_PUBKEY_ATTEST  = 'urn:xmpp:attest:2'
 NS_STREAM_MGMT    = 'urn:xmpp:sm:3'                                   # XEP-198
 NS_HASHES         = 'urn:xmpp:hashes:1'                               # XEP-300
-NS_HASHES_MD5     = 'urn:xmpp:hash-function-textual-names:md5'
-NS_HASHES_SHA1    = 'urn:xmpp:hash-function-textual-names:sha-1'
-NS_HASHES_SHA256  = 'urn:xmpp:hash-function-textual-names:sha-256'
-NS_HASHES_SHA512  = 'urn:xmpp:hash-function-textual-names:sha-512'
+NS_HASHES_2       = 'urn:xmpp:hashes:2'                               # XEP-300
+NS_HASHES_MD5     = 'urn:xmpp:hash-function-text-names:md5'
+NS_HASHES_SHA1    = 'urn:xmpp:hash-function-text-names:sha-1'
+NS_HASHES_SHA256  = 'urn:xmpp:hash-function-text-names:sha-256'
+NS_HASHES_SHA512  = 'urn:xmpp:hash-function-text-names:sha-512'
+NS_HASHES_SHA3_256 = 'urn:xmpp:hash-function-text-names:sha3-256'
+NS_HASHES_SHA3_512 = 'urn:xmpp:hash-function-text-names:sha3-512'
+NS_HASHES_BLAKE2B_256 = 'urn:xmpp:hash-function-text-names:id-blake2b256'
+NS_HASHES_BLAKE2B_512 = 'urn:xmpp:hash-function-text-names:id-blake2b512'
+NS_OPENPGP = 'urn:xmpp:openpgp:0'
 
 #xmpp_stream_error_conditions = '''
 #bad-format --  --  -- The entity has sent XML that cannot be processed.
@@ -827,6 +840,15 @@ class Protocol(Node):
             return self.timestamp
         return time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime())
 
+    def getJid(self):
+        """
+        Return the value of the 'jid' attribute
+        """
+        attr = self.getAttr('jid')
+        if attr:
+            return JID(attr)
+        return attr
+
     def getID(self):
         """
         Return the value of the 'id' attribute
@@ -939,6 +961,19 @@ class Protocol(Node):
                 props.append(prop)
         return props
 
+    def getTag(self, name, attrs=None, namespace=None, protocol=False):
+        """
+        Return the Node instance for the tag.
+        If protocol is True convert to a new Protocol/Message instance.
+        """
+        tag = Node.getTag(self, name, attrs, namespace)
+        if protocol and tag:
+            if name == 'message':
+                return Message(node=tag)
+            else:
+                return Protocol(node=tag)
+        return tag
+
     def __setitem__(self, item, val):
         """
         Set the item 'item' to the value 'val'
@@ -1006,6 +1041,22 @@ class Message(Protocol):
         """
         return self.getTagData('thread')
 
+    def getOriginID(self):
+        """
+        Return origin-id of the message
+        """
+        return self.getTagAttr('origin-id', namespace=NS_SID, attr='id')
+
+    def getStanzaIDAttrs(self):
+        """
+        Return the stanza-id attributes of the message
+        """
+        try:
+            attrs = self.getTag('stanza-id', namespace=NS_SID).getAttrs()
+        except Exception:
+            return None, None
+        return attrs['id'], attrs['by']
+
     def setBody(self, val):
         """
         Set the text of the message"""
@@ -1042,6 +1093,12 @@ class Message(Protocol):
         Set the thread of the message
         """
         self.setTagData('thread', val)
+
+    def setOriginID(self, val):
+        """
+        Sets the origin-id of the message
+        """
+        self.setTag('origin-id', namespace=NS_SID, attrs={'id': val})
 
     def buildReply(self, text=None):
         """
@@ -1345,6 +1402,66 @@ class Hashes(Node):
                 for line in file_string:
                     hl.update(line)
                 hash_ = hl.hexdigest()
+        return hash_
+
+    def addHash(self, hash_, algo):
+        self.setAttr('algo', algo)
+        self.setData(hash_)
+
+class Hashes2(Node):
+    """
+    Hash elements for various XEPs as defined in XEP-300
+    """
+
+    """
+    RECOMENDED HASH USE:
+    Algorithm     Support
+    MD2           MUST NOT
+    MD4           MUST NOT
+    MD5           MUST NOT
+    SHA-1         SHOULD NOT
+    SHA-256       MUST
+    SHA-512       SHOULD
+    SHA3-256      MUST
+    SHA3-512      SHOULD
+    BLAKE2b256    MUST
+    BLAKE2b512    SHOULD
+    """
+
+    supported = ('sha-256', 'sha-512', 'sha3-256', 'sha3-512', 'blake2b-256', 'blake2b-512')
+
+    def __init__(self, nsp=NS_HASHES):
+        Node.__init__(self, None, {}, [], None, None, False, None)
+        self.setNamespace(nsp)
+        self.setName('hash')
+
+    def calculateHash(self, algo, file_string):
+        """
+        Calculate the hash and add it. It is preferable doing it here
+        instead of doing it all over the place in Gajim.
+        """
+        hl = None
+        hash_ = None
+        if algo == 'sha-256':
+            hl = hashlib.sha256()
+        elif algo == 'sha-512':
+            hl = hashlib.sha512()
+        elif algo == 'sha3-256':
+            hl = hashlib.sha3_256()
+        elif algo == 'sha3-512':
+            hl = hashlib.sha3_512()
+        elif algo == 'blake2b-256':
+            hl = hashlib.blake2b(digest_size=32)
+        elif algo == 'blake2b-512':
+            hl = hashlib.blake2b(digest_size=64)
+        # file_string can be a string or a file
+        if hl is not None:
+            if isinstance(file_string, bytes):
+                hl.update(file_string)
+            else: # if it is a file
+                for line in file_string:
+                    hl.update(line)
+            hash_ = b64encode(hl.digest()).decode('ascii')
         return hash_
 
     def addHash(self, hash_, algo):

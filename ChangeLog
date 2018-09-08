@@ -1,3 +1,50 @@
+python-nbxmpp 0.6.7 (19 August 2018)
+
+ * Raise default TLS version to 1.2
+ * Remove DIGEST-MD5 from the default auth mechs
+ * Add STANZA RECEIVED Event (Some servers send more than one stanza in one packet)
+ * Add alternative locations to load TLS certs from
+
+python-nbxmpp 0.6.6 (20 May 2018)
+
+ * Record all SSL errors instead of only the first
+ * Pass arguments to plugin/plugout methods
+ * Allow the Roster to be initalized without requesting it from the server
+
+python-nbxmpp 0.6.5 (30 April 2018)
+
+ * Fix BOSH usage (don't set ALPN)
+ * Better handling of certificate files
+
+python-nbxmpp 0.6.4 (17 March 2018)
+
+ * Fix SOCKS5 usage
+
+python-nbxmpp 0.6.3 (26 January 2018)
+
+ * Add ALPN and SNI support for when using DirectTLS
+ * Bugfixes
+
+python-nbxmpp 0.6.2 (27 December 2017)
+
+ * Correctly load client certs
+ * Warn on any error in the certificate chain
+ * Fixed a traceback loop
+
+python-nbxmpp 0.6.1 (29 November 2017)
+
+ * Add new getStanzaIDAttrs method
+ * Fix BOSH connexion
+ * stop using PyOpenSSL for random generator
+
+python-nbxmpp 0.6.0 (25 September 2017)
+
+ * Add new getOriginID/SetOriginID method for Messages
+ * Add new getJid() method for Protocol
+ * getTagAttr() accepts now a namespace argument
+ * Add new `protocol` argument for getTag()
+ * Add new XEP Namespaces
+
 python-nbxmpp 0.5.6 (03 June 2017)
 
   * Support XEP-0198 Version 1.5.2

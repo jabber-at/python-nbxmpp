@@ -316,7 +316,7 @@ class NonBlockingTCP(NonBlockingTransport, IdleObject):
     estabilish TLS connection.
     """
     def __init__(self, raise_event, on_disconnect, idlequeue, estabilish_tls,
-    certs, tls_version, cipher_list, proxy_dict=None):
+    certs, tls_version, cipher_list, alpn, proxy_dict=None):
         """
         :param proxy_dict: dictionary with proxy data as loaded from config file
         """
@@ -339,7 +339,12 @@ class NonBlockingTCP(NonBlockingTransport, IdleObject):
 
         # ssl variables
         self.ssl_certificate = None
+        # first ssl error
         self.ssl_errnum = 0
+        # all ssl errors
+        self.ssl_errors = []
+
+        self.alpn = alpn
 
     # FIXME: transport should not be aware xmpp
     def start_disconnect(self):
@@ -432,7 +437,7 @@ class NonBlockingTCP(NonBlockingTransport, IdleObject):
         """
         cacerts, mycerts = self.certs
         result = tls_nb.NonBlockingTLS.get_instance(cacerts, mycerts,
-            self.tls_version, self.cipher_list).PlugIn(self)
+            self.tls_version, self.cipher_list, self.alpn).PlugIn(self)
         if result:
             on_succ()
         else:
@@ -609,13 +614,13 @@ class NonBlockingTCP(NonBlockingTransport, IdleObject):
         try:
             # get as many bites, as possible, but not more than RECV_BUFSIZE
             received = self._recv(RECV_BUFSIZE)
-        except socket.error as e:
-            log.info("_do_receive: got %s:" % received, exc_info=True)
         except tls_nb.SSLWrapper.Error as e:
             log.info("_do_receive, caught SSL error, got %s:" % received,
                     exc_info=True)
             errnum, errstr = e.errno,\
                 decode_py2(e.strerror, locale.getpreferredencoding())
+        except socket.error as e:
+            log.info("_do_receive: got %s:" % received, exc_info=True)
 
         if received == '':
             errstr = 'zero bytes on recv'
@@ -649,19 +654,21 @@ class NonBlockingTCP(NonBlockingTransport, IdleObject):
             received = self.received_bytes_buff + received
             self.received_bytes_buff = b''
 
-        # try to decode data
-        try:
-            received = decode_py2(received, 'utf-8')
-        except UnicodeDecodeError:
-            for i in range(-1, -4, -1):
-                char = received[i]
-                if sys.version_info[0] < 3: # with py2 we get a str
-                    char = ord(char)
-                if char & 0xc0 == 0xc0:
-                    self.received_bytes_buff = received[i:]
-                    received = received[:i]
-                    break
-            received = decode_py2(received, 'utf-8')
+        if self.state != PROXY_CONNECTING or self.proxy_dict['type'] != \
+        'socks5':
+            # try to decode data
+            try:
+                received = decode_py2(received, 'utf-8')
+            except UnicodeDecodeError:
+                for i in range(-1, -4, -1):
+                    char = received[i]
+                    if sys.version_info[0] < 3: # with py2 we get a str
+                        char = ord(char)
+                    if char & 0xc0 == 0xc0:
+                        self.received_bytes_buff = received[i:]
+                        received = received[:i]
+                        break
+                received = decode_py2(received, 'utf-8')
 
         # pass received data to owner
         if self.on_receive:
@@ -700,7 +707,7 @@ class NonBlockingHTTP(NonBlockingTCP):
         :param http_dict: dictionary with data for HTTP request and headers
         """
         NonBlockingTCP.__init__(self, raise_event, on_disconnect, idlequeue,
-            estabilish_tls, certs, tls_version, cipher_list, proxy_dict)
+            estabilish_tls, certs, tls_version, cipher_list, False, proxy_dict)
 
         self.http_protocol, self.http_host, self.http_port, self.http_path = \
             urisplit(http_dict['http_uri'])
@@ -784,7 +791,7 @@ class NonBlockingHTTP(NonBlockingTCP):
                 'Host: %s:%s' % (self.http_host, self.http_port),
                 'User-Agent: Gajim',
                 'Content-Type: text/xml; charset=utf-8',
-                'Content-Length: %s' % len(str(httpbody))]
+                'Content-Length: %s' % len(httpbody)]
         if self.add_proxy_headers:
             headers.append('Proxy-Connection: keep-alive')
             headers.append('Pragma: no-cache')
@@ -796,7 +803,7 @@ class NonBlockingHTTP(NonBlockingTCP):
             headers.append('Connection: Keep-Alive')
         headers.append('\r\n')
         headers = '\r\n'.join(headers)
-        return '%s%s' % (headers, httpbody)
+        return b'%s%s' % (headers.encode('utf-8'), httpbody)
 
     def parse_http_message(self, message):
         """

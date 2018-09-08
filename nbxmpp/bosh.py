@@ -17,7 +17,8 @@
 ## You should have received a copy of the GNU General Public License
 ## along with Gajim.  If not, see <http://www.gnu.org/licenses/>.
 
-
+import os
+import binascii
 import locale
 from hashlib import sha1
 from .transports_nb import NonBlockingTransport, NonBlockingHTTPBOSH,\
@@ -28,8 +29,6 @@ from .simplexml import Node
 
 import logging
 log = logging.getLogger('nbxmpp.bosh')
-
-from . import rndg
 
 KEY_COUNT = 10
 
@@ -94,8 +93,10 @@ class NonBlockingBOSH(NonBlockingTransport):
 
         # ssl variables
         self.ssl_certificate = None
+        # first ssl error
         self.ssl_errnum = 0
-
+        # all ssl errors
+        self.ssl_errors = []
 
     def connect(self, conn_5tuple, on_connect, on_connect_failure):
         NonBlockingTransport.connect(self, conn_5tuple, on_connect, on_connect_failure)
@@ -486,11 +487,9 @@ class NonBlockingBOSH(NonBlockingTransport):
 
 
 def get_rand_number():
-    # with 50-bit random initial rid, session would have to go up
-    # to 7881299347898368 messages to raise rid over 2**53
     # (see http://www.xmpp.org/extensions/xep-0124.html#rids)
     # it's also used for sequence key initialization
-    return rndg.getrandbits(50)
+    return int(binascii.hexlify(os.urandom(6)), 16)
 
 
 class AckChecker(object):
@@ -547,10 +546,10 @@ class KeyStack(object):
         self.first_call = True
 
     def reset(self):
-        seed = str(get_rand_number())
+        seed = str(get_rand_number()).encode('utf-8')
         self.keys = [sha1(seed).hexdigest()]
         for i in range(self.count-1):
-            curr_seed = self.keys[i]
+            curr_seed = self.keys[i].encode('utf-8')
             self.keys.append(sha1(curr_seed).hexdigest())
 
     def get(self):

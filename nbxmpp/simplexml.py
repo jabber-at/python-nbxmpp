@@ -331,13 +331,13 @@ class Node(object):
         """
         return self.getTags(name, attrs, namespace, one=1)
 
-    def getTagAttr(self, tag, attr):
+    def getTagAttr(self, tag, attr, namespace=None):
         """
         Return attribute value of the child with specified name (or None if no
         such attribute)
         """
         try:
-            return self.getTag(tag).attrs[attr]
+            return self.getTag(tag, namespace=namespace).attrs[attr]
         except:
             return None
 
@@ -445,15 +445,15 @@ class Node(object):
         else:
             return self.addChild(name, attrs, namespace=namespace)
 
-    def setTagAttr(self, tag, attr, val):
+    def setTagAttr(self, tag, attr, val, namespace=None):
         """
         Create new node (if not already present) with name "tag" and set it's
         attribute "attr" to value "val"
         """
         try:
-            self.getTag(tag).attrs[attr] = val
+            self.getTag(tag, namespace=namespace).attrs[attr] = val
         except Exception:
-            self.addChild(tag, attrs={attr: val})
+            self.addChild(tag, namespace=namespace, attrs={attr: val})
 
     def setTagData(self, tag, val, attrs=None):
         """
@@ -634,6 +634,9 @@ class NodeBuilder(object):
                     self._document_attrs[attr] = val
             ns = self._document_nsp.get(nsp, 'http://www.gajim.org/xmlns/undeclared-root')
             try:
+                header = Node(tag=tag, attrs=attrs,
+                              nsp=self._document_nsp, node_built=True)
+                self.dispatch(header)
                 self.stream_header_received(ns, name, attrs)
             except ValueError as e:
                 self._document_attrs = None
