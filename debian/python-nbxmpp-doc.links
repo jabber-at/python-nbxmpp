@@ -1,0 +1,2 @@
+# These are identical files: keep one and make the other one a symlink to it
+usr/share/doc/python-nbxmpp-doc/apidocs/frames.html usr/share/doc/python-nbxmpp-doc/apidocs/index.html

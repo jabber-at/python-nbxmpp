@@ -5,6 +5,7 @@ python-nbxmpp (0.6.7-0.1) unstable; urgency=medium
   * Merge copyright, rules and watch with upstream package
   * Set Orig-Maintainer: Debian XMPP Maintainers
     <pkg-xmpp-devel@lists.alioth.debian.org>
+  * Install symlinks in doc package like in upstream
   * Switch to debhelper 11
 
  -- Mathias Ertl <mati@jabber.at>  Sat, 08 Sep 2018 11:49:08 +0200
