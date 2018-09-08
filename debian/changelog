@@ -1,6 +1,7 @@
 python-nbxmpp (0.6.7-0.1) unstable; urgency=medium
 
   * New upstream version
+  * Bump standards version
 
  -- Mathias Ertl <mati@jabber.at>  Sat, 08 Sep 2018 11:49:08 +0200
 
