@@ -24,6 +24,7 @@ from .plugin import PlugIn
 import sys
 import os
 import time
+import io
 
 import traceback
 
@@ -253,7 +254,7 @@ class NonBlockingTLS(PlugIn):
     PyOpenSSLWrapper.
     """
 
-    def __init__(self, cacerts, mycerts, tls_version, cipher_list):
+    def __init__(self, cacerts, mycerts, tls_version, cipher_list, alpn):
         """
         :param cacerts: path to pem file with certificates of known XMPP servers
         :param mycerts: path to pem file with certificates of user trusted
@@ -268,13 +269,14 @@ class NonBlockingTLS(PlugIn):
         self.cacerts = cacerts
         self.mycerts = mycerts
         if cipher_list is None:
-            self.cipher_list = b'HIGH:!aNULL:RC4-SHA'
+            self.cipher_list = b'HIGH:!aNULL'
         else:
             self.cipher_list = cipher_list.encode('ascii')
         if tls_version is None:
-            self.tls_version = '1.0'
+            self.tls_version = '1.2'
         else:
             self.tls_version = tls_version
+        self.alpn = alpn
 
     def plugin(self, owner):
         """
@@ -336,12 +338,16 @@ class NonBlockingTLS(PlugIn):
         if not os.path.isfile(cert_path):
             return
         try:
-            f = open(cert_path)
-        except IOError as e:
+            if sys.version_info[0] > 2:
+                f = open(cert_path, encoding='utf-8')
+            else:
+                f = io.open(cert_path, encoding='utf-8')
+            lines = f.readlines()
+        except (IOError, UnicodeError) as e:
             log.warning('Unable to open certificate file %s: %s' % \
                     (cert_path, str(e)))
             return
-        lines = f.readlines()
+
         i = 0
         begin = -1
         for line in lines:
@@ -376,7 +382,11 @@ class NonBlockingTLS(PlugIn):
         except AttributeError as e:
             # py-OpenSSL < 0.9 or old OpenSSL
             flags |= 16384
-        
+
+        if self.alpn:
+            # XEP-0368 set ALPN Protocol
+            tcpsock._sslContext.set_alpn_protos([b'xmpp-client'])
+
         try:
             # OpenSSL 1.0.1d supports TLS 1.1 and TLS 1.2 and
             # fixes renegotiation in TLS 1.1, 1.2 by using the correct TLS version. 
@@ -407,7 +417,7 @@ class NonBlockingTLS(PlugIn):
             conn = tcpsock._owner._caller
             log.debug('Using client cert and key from %s' % conn.client_cert)
             try:
-                p12 = OpenSSL.crypto.load_pkcs12(open(conn.client_cert).read(),
+                p12 = OpenSSL.crypto.load_pkcs12(open(conn.client_cert, 'rb').read(),
                     conn.client_cert_passphrase)
             except OpenSSL.crypto.Error as exception_obj:
                 log.warning('Unable to load client pkcs12 certificate from '
@@ -438,16 +448,24 @@ class NonBlockingTLS(PlugIn):
         store = tcpsock._sslContext.get_cert_store()
         self._load_cert_file(self.cacerts, store)
         self._load_cert_file(self.mycerts, store)
-        if os.path.isdir('/etc/ssl/certs'):
-            for f in os.listdir('/etc/ssl/certs'):
-                # We don't logg because there is a lot a duplicated certs in this
-                # folder
-                self._load_cert_file(os.path.join('/etc/ssl/certs', f), store,
-                        logg=False)
+        paths = ['/etc/ssl/certs',
+                 '/etc/ssl']  # FreeBSD uses this
+        for path in paths:
+            if not os.path.isdir(path):
+                continue
+            for f in os.listdir(path):
+                # We don't logg because there is a lot a duplicated certs
+                # in this folder
+                self._load_cert_file(os.path.join(path, f), store, logg=False)
 
         tcpsock._sslObj = OpenSSL.SSL.Connection(tcpsock._sslContext,
                 tcpsock._sock)
         tcpsock._sslObj.set_connect_state() # set to client mode
+
+        if self.alpn:
+            # Set SNI EXT on the SSL Connection object, see XEP-0368
+            tcpsock._sslObj.set_tlsext_host_name(tcpsock._owner.Server.encode())
+
         wrapper = PyOpenSSLWrapper(tcpsock._sslObj)
         tcpsock._recv = wrapper.recv
         tcpsock._send = wrapper.send
@@ -494,13 +512,19 @@ class NonBlockingTLS(PlugIn):
     def _ssl_verify_callback(self, sslconn, cert, errnum, depth, ok):
         # Exceptions can't propagate up through this callback, so print them here.
         try:
+            if errnum:
+                self._owner.ssl_errors.append(errnum)
+                # This stores all ssl errors that are encountered while
+                # the chain is verifyed
+            if not self._owner.ssl_errnum:
+                # This records the first ssl error that is encountered
+                # we keep this because of backwards compatibility
+                self._owner.ssl_errnum = errnum
             if depth == 0:
                 self._owner.ssl_certificate = cert
-                if not ok:
-                    self._owner.ssl_errnum = errnum
             return True
-        except:
-            log.error("Exception caught in _ssl_info_callback:", exc_info=True)
+        except Exception:
+            log.exception("Exception caught in _ssl_info_callback:")
             # Make sure something is printed, even if log is disabled.
             traceback.print_exc()
 

@@ -29,6 +29,8 @@ from .protocol import Node, NodeProcessed, isResultNode, Iq, Protocol, JID
 from .plugin import PlugIn
 import sys
 import re
+import os
+import binascii
 import base64
 from . import dispatcher_nb
 import hmac
@@ -36,8 +38,6 @@ import hashlib
 
 import logging
 log = logging.getLogger('nbxmpp.auth_nb')
-
-from . import rndg
 
 def HH(some): return hashlib.md5(some).hexdigest()
 def H(some): return hashlib.md5(some).digest()
@@ -96,7 +96,7 @@ def _scram_parse(chatter):
 
 SASL_AUTHENTICATION_MECHANISMS = \
     set(['ANONYMOUS', 'EXTERNAL', 'GSSAPI', 'SCRAM-SHA-1-PLUS', 'SCRAM-SHA-1',
-         'DIGEST-MD5', 'PLAIN', 'X-MESSENGER-OAUTH2'])
+         'PLAIN', 'X-MESSENGER-OAUTH2'])
 
 class SASL(PlugIn):
     """
@@ -463,7 +463,7 @@ class SASL(PlugIn):
         (isinstance(chal['qop'], list) and 'auth' in chal['qop'])):
             self.resp = {'username': self.username,
                 'nonce': chal['nonce'],
-                'cnonce': '%x' % rndg.getrandbits(196),
+                'cnonce': '%x' % int(binascii.hexlify(os.urandom(24)), 16),
                 'nc': ('00000001'),  # ToDo: Is this a tupel or only a string?
                 'qop': 'auth',
                 'digest-uri': 'xmpp/' + self._owner.Server,
@@ -498,7 +498,7 @@ class SASL(PlugIn):
     def set_password(self, password):
         self.password = '' if password is None else password
         if self.mechanism in ('SCRAM-SHA-1', 'SCRAM-SHA-1-PLUS'):
-            self.client_nonce = '%x' % rndg.getrandbits(196)
+            self.client_nonce = '%x' % int(binascii.hexlify(os.urandom(24)), 16)
             self.scram_soup = 'n=' + self.username + ',r=' + self.client_nonce
             if self.mechanism == 'SCRAM-SHA-1':
                 if self.channel_binding is None:
@@ -693,10 +693,13 @@ class NonBlockingBind(PlugIn):
             #self.bound='failure'
             self.bound = []
             return
-        if feats.getTag('session', namespace=NS_SESSION):
-            self.session = 1
-        else:
-            self.session = -1
+
+        self.session = -1
+        session = feats.getTag('session', namespace=NS_SESSION)
+        if session is not None:
+            if session.getTag('optional') is None:
+                self.session = 1
+
         self.bound = []
 
     def plugout(self):

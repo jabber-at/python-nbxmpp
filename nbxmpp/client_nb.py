@@ -72,6 +72,7 @@ class NonBlockingClient(object):
         self.stream_started = False
         self.disconnecting = False
         self.protocol_type = 'XMPP'
+        self.alpn = False
 
     def disconnect(self, message=''):
         """
@@ -150,7 +151,7 @@ class NonBlockingClient(object):
 
     def connect(self, on_connect, on_connect_failure, hostname=None, port=5222,
     on_proxy_failure=None, on_stream_error_cb=None, proxy=None,
-    secure_tuple=('tls', None, None, None, None)):
+    secure_tuple=('tls', None, None, None, None, False)):
         """
         Open XMPP connection (open XML streams in both directions)
 
@@ -165,19 +166,22 @@ class NonBlockingClient(object):
             values for keys 'host' and 'port' - connection details for proxy
             serve and optionally keys 'user' and 'pass' as proxy credentials
         :param secure_tuple: tuple of (desired connection type, cacerts,
-            mycerts, tls_version, cipher_list)
+            mycerts, tls_version, cipher_list, alpn)
             connection type can be 'ssl' - TLS established after TCP connection,
                 'tls' - TLS established after negotiation with starttls, or
                 'plain'.
-            cacerts, mycerts, tls_version, cipher_list - see tls_nb.NonBlockingTLS
-                constructor for more details
+            cacerts, mycerts, tls_version, cipher_list, alpn
+                see tls_nb.NonBlockingTLS constructor for more details
         """
         self.on_connect = on_connect
         self.on_connect_failure=on_connect_failure
         self.on_proxy_failure = on_proxy_failure
         self.on_stream_error_cb = on_stream_error_cb
         self.desired_security, self.cacerts, self.mycerts, self.tls_version, \
-            self.cipher_list = secure_tuple
+            self.cipher_list = secure_tuple[:5]
+        if len(secure_tuple) == 6:
+            # ALPN support was added in version 0.6.3
+            self.alpn = secure_tuple[5]
         self.Connection = None
         self.Port = port
         self.proxy = proxy
@@ -239,6 +243,7 @@ class NonBlockingClient(object):
                     certs=certs,
                     tls_version = self.tls_version,
                     cipher_list = self.cipher_list,
+                    alpn=self.alpn,
                     proxy_dict=proxy_dict)
 
         # plug transport into client as self.Connection
@@ -465,7 +470,10 @@ class NonBlockingClient(object):
         Raise event to connection instance. DATA_SENT and DATA_RECIVED events
         are used in XML console to show XMPP traffic
         """
-        log.info('raising event from transport: :::::%s::::\n_____________\n%s\n_____________\n' % (event_type, data))
+        e_t = event_type
+        if type(event_type) != str:
+            e_t = event_type.encode('utf-8')
+        log.info('raising event from transport: :::::%s::::\n_____________\n%s\n_____________\n' % (e_t, data))
         if hasattr(self, 'Dispatcher'):
             self.Dispatcher.Event('', event_type, data)
 
@@ -593,12 +601,13 @@ class NonBlockingClient(object):
         self.NonBlockingBind.NonBlockingBind(self._Resource, self._on_sasl_auth)
         return True
 
-    def initRoster(self, version=''):
+    def initRoster(self, version='', request=True):
         """
         Plug in the roster
         """
         if 'NonBlockingRoster' not in self.__dict__:
-            return roster_nb.NonBlockingRoster.get_instance(version=version).PlugIn(self)
+            return roster_nb.NonBlockingRoster.get_instance(
+                version=version).PlugIn(self, request=request)
 
     def getRoster(self, on_ready=None, force=False):
         """
