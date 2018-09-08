@@ -2,7 +2,7 @@ Source: python-nbxmpp
 Section: python
 Priority: optional
 Maintainer: Mathias Ertl <mati@jabber.at>
-XSBC-Orig-Maintainer: Tanguy Ortolo <tanguy+debian@ortolo.eu>
+XSBC-Orig-Maintainer: Debian XMPP Maintainers <pkg-xmpp-devel@lists.alioth.debian.org>
 Build-Depends: debhelper (>= 9), dh-python, python-all, python3-all, python3-gi
 Standards-Version: 4.1.4
 Homepage: https://python-nbxmpp.gajim.org/

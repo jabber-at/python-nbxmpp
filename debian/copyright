@@ -1,11 +1,11 @@
-Format: http://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
+Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
 Upstream-Name: python-nbxmpp
-Source: https://python-nbxmpp.gajim.org/
+Source: https://dev.gajim.org/gajim/python-nbxmpp
 License: GPL-3.0
 
 Files: *
 Copyright: 2003-2005 Alexey "Snake" Nezhdanov
-           2005-2012 Yann Leboulanger <asterix AT lagaule.org>
+           2005-2017 Yann Leboulanger <asterix AT lagaule.org>
            2006 Dimitur Kirov <dkirov@gmail.com>
            2006 Stefan Bethge <stefan AT lanpartei.de>
            2007 Julien Pivotto <roidelapluie@gmail.com>
@@ -13,40 +13,15 @@ Copyright: 2003-2005 Alexey "Snake" Nezhdanov
            2007-2008 Brendan Taylor <whateley AT gmail.com>
            2008 Tomas Karasek <tom.to.the.k@gmail.com>
            2013 Fedor Brunner <fedor.brunner@azet.sk>
+           2017 Philipp Hörist <philipp@hoerist.com>
 License: GPL-3.0
 Comment: This is a fork of python-xmpppy, which was distributed under the
  GPL-2+. This fork itself, and the modifications it provides, are distributed
- under GPK-3.
-
-Files: nbxmpp/xmpp_stringprep.py
-Copyright: Twisted Matrix Laboratories
-License: Expat
+ under GPL-3.
 
 Files: debian/*
 Copyright: 2014 Tanguy Ortolo <tanguy+debian@ortolo.eu>
 License: CC0
-
-License: Expat
- Copyright (c) 1998, 1999, 2000 Thai Open Source Software Center Ltd
- .
- Permission is hereby granted, free of charge, to any person obtaining
- a copy of this software and associated documentation files (the
- "Software"), to deal in the Software without restriction, including
- without limitation the rights to use, copy, modify, merge, publish,
- distribute, sublicense, and/or sell copies of the Software, and to
- permit persons to whom the Software is furnished to do so, subject to
- the following conditions:
- .
- The above copyright notice and this permission notice shall be included
- in all copies or substantial portions of the Software.
- .
- THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
- EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
- MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
- IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
- CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
- TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
- SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 License: GPL-3.0
  This program is free software: you can redistribute it and/or modify

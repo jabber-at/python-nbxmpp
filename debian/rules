@@ -1,6 +1,5 @@
 #!/usr/bin/make -f
-# See debhelper(7) (uncomment to enable)
-# output every command that modifies files on the build system.
+
 #DH_VERBOSE = 1
 
 # see EXAMPLES in dpkg-buildflags(1) and read /usr/share/dpkg/*
@@ -9,6 +8,9 @@ include /usr/share/dpkg/default.mk
 
 export PYBUILD_NAME=nbxmpp
 
-# main packaging script based on dh7 syntax
 %:
 	dh $@ --with python2,python3 --buildsystem=pybuild
+
+override_dh_installdocs:
+	dh_installdocs -ppython-nbxmpp-doc --doc-main-package=python-nbxmpp-doc
+	dh_installdocs --remaining-packages

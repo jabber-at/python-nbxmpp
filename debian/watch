@@ -1,4 +1,6 @@
-# In the upstream download page <https://python-nbxmpp.gajim.org/downloads>,
-# release tarballs are only linked as numbers, the actual file name being
-# provided in the download HTTP header, a mechanism that is not usable by
-# uscan. See upstream bug report <https://python-nbxmpp.gajim.org/ticket/27>.
+# See uscan(1) for format                                                     
+
+# Compulsory line, this is a version 4 file
+version=4
+
+https://dev.gajim.org/gajim/python-nbxmpp/tags .*/nbxmpp-@ANY_VERSION@@ARCHIVE_EXT@ debian
